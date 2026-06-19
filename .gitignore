@@ -1,0 +1,11 @@
+# Ignore python cache files
+__pycache__/
+*.pyc
+
+# Ignore datasets and dynamic downloads
+data/external/
+data/raw/
+
+# Ignore heavy model checkpoints/weights
+weights/
+*.pth
