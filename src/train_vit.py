@@ -6,9 +6,9 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from tqdm import tqdm
 
-# Import our custom components
+# Import custom components from your src package
 from src.dataset import Data
-from src.model import CNN
+from src.model import DeepfakeViTWrapper 
 
 def train_one_epoch(model, dataloader, criterion, optimizer, device):
     model.train()
@@ -16,11 +16,10 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device):
     correct_preds = 0
     total_samples = 0
     
-    # tqdm adds a beautiful, real-time progress bar to your terminal
-    progress_bar = tqdm(dataloader, desc="Training")
+    progress_bar = tqdm(dataloader, desc="ViT Training")
     for images, labels in progress_bar:
         images = images.to(device)
-        labels = labels.to(device).unsqueeze(1) # Reshape labels from [batch] to [batch, 1]
+        labels = labels.to(device) # Keep flat as integers [batch] for CrossEntropyLoss
         
         # Forward pass
         optimizer.zero_grad()
@@ -34,12 +33,11 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device):
         # Track statistics
         running_loss += loss.item() * images.size(0)
         
-        # Since outputs are raw logits, a value > 0 means class 1 (Fake), <= 0 means class 0 (Real)
-        predictions = (outputs > 0.0).float()
+        # CrossEntropy logits evaluation: grab the index of the highest logit value
+        predictions = torch.argmax(outputs, dim=1)
         correct_preds += (predictions == labels).sum().item()
         total_samples += images.size(0)
         
-        # Update progress bar message dynamically
         progress_bar.set_postfix(loss=loss.item(), acc=correct_preds / total_samples)
         
     return running_loss / total_samples, correct_preds / total_samples
@@ -50,33 +48,32 @@ def validate(model, dataloader, criterion, device):
     correct_preds = 0
     total_samples = 0
     
-    with torch.no_grad(): # Disable gradient calculations for pure validation speed
-        for images, labels in tqdm(dataloader, desc="Validation"):
+    with torch.no_grad():
+        for images, labels in tqdm(dataloader, desc="ViT Validation"):
             images = images.to(device)
-            labels = labels.to(device).unsqueeze(1)
+            labels = labels.to(device)
             
             outputs = model(images)
             loss = criterion(outputs, labels)
             
             running_loss += loss.item() * images.size(0)
-            predictions = (outputs > 0.0).float()
+            predictions = torch.argmax(outputs, dim=1)
             correct_preds += (predictions == labels).sum().item()
             total_samples += images.size(0)
             
     return running_loss / total_samples, correct_preds / total_samples
 
 def main():
-    # 1. Hyperparameters & Configuration
+    # 1. Hyperparameters Optimized for Transformers
     BATCH_SIZE = 32
     EPOCHS = 10
-    LEARNING_RATE = 1e-4
+    LEARNING_RATE = 5e-5  # ViTs need a smaller learning rate than CNNs to stabilize self-attention
     DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f"Using hardware device: {DEVICE}")
     
-    # Create weights folder if it doesn't exist yet
+    print(f"Using hardware device: {DEVICE} | Initializing Vision Transformer Branch")
     os.makedirs('weights', exist_ok=True)
 
-    # 2. Image Transformations (ImageNet standards)
+    # 2. Image Transformations
     means = [0.485, 0.456, 0.406]
     stds = [0.229, 0.224, 0.225]
     
@@ -94,23 +91,24 @@ def main():
         transforms.Normalize(mean=means, std=stds)
     ])
 
-    # 3. Instantiate Custom Datasets and PyTorch DataLoaders
+    # 3. Load Datasets
     print("Loading Datasets...")
+    # Adjust paths if your dataset location differs locally
     train_dataset = Data(root_dir='../data/external/train', transform=train_transforms)
     val_dataset = Data(root_dir='../data/external/valid', transform=val_transforms)
     
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4, pin_memory=True)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4, pin_memory=True)
 
-    # 4. Initialize the CNN Model Wrapper
-    print("Initializing ResNet50 Baseline Model...")
-    model = CNN(pretrained=True).to(DEVICE)
-
-    # 5. Define Loss Engine and Optimization Strategy
-    criterion = nn.BCEWithLogitsLoss()
+    # 4. Model, Loss, & Optimizer Initialization
+    print("Loading ViT-B/16 Architecture with Pretrained ImageNet Head...")
+    model = DeepfakeViTWrapper(pretrained=True).to(DEVICE)
+    
+    # CrossEntropy expects multi-class logit arrays [Batch, 2] and targets as class indices
+    criterion = nn.CrossEntropyLoss()
     optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-4)
 
-    # 6. The Execution Training Loop
+    # 5. Training Loop
     best_val_acc = 0.0
     print(f"Beginning optimization execution for {EPOCHS} epochs...\n")
     
@@ -122,13 +120,13 @@ def main():
         print(f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc*100:.2f}%")
         print(f"Val Loss:   {val_loss:.4f} | Val Acc:   {val_acc*100:.2f}%\n")
         
-        # Save the best weights snapshot if validation accuracy improves
+        # Save independent ViT weights file
         if val_acc > best_val_acc:
             best_val_acc = val_acc
-            torch.save(model.state_dict(), 'weights/cnn_baseline.pth')
-            print(f"✨ New best validation checkpoint locked! Accuracy: {best_val_acc*100:.2f}% -> Weights saved.")
+            torch.save(model.state_dict(), 'weights/vit_baseline.pth')
+            print(f"✨ New best validation checkpoint locked! Accuracy: {best_val_acc*100:.2f}% -> Weights saved to weights/vit_baseline.pth.")
 
-    print("Training completely finished.")
+    print("ViT Training completely finished.")
 
 if __name__ == '__main__':
     main()
