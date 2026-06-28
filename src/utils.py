@@ -117,7 +117,7 @@ def run_forensic_analysis(img_path, title_prefix="Image"):
 if __name__ == "__main__":
     # 🎯 PASTE YOUR COPIED PATH INSIDE THE QUOTES BELOW:
     # The 'r' before the string handles Windows backslashes perfectly!
-    manual_image_path = r"C:\Users\tnkis\projects_adya\ViTvsCNN\data\external\train\fake\0EHGGMDEDA.jpg"
+    manual_image_path = r"C:\Users\tnkis\projects_adya\ViTvsCNN\data\external\valid\fake\0AIFZB4IE6.jpg"
     
     print(f"🧠 Local execution starting: Analyzing target image...")
     if os.path.exists(manual_image_path):

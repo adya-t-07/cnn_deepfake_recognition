@@ -81,7 +81,8 @@ def main():
     stds = [0.229, 0.224, 0.225]
     
     train_transforms = transforms.Compose([
-        transforms.Resize((224, 224)),
+        # 💡 ADD THIS: Jitter the boundary coordinates exactly like the ViT pipeline
+        transforms.RandomResizedCrop(size=(224, 224), scale=(0.8, 1.0), ratio=(0.9, 1.1)),
         transforms.RandomHorizontalFlip(p=0.5),
         transforms.ColorJitter(brightness=0.1, contrast=0.1),
         transforms.ToTensor(),

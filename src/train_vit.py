@@ -19,7 +19,7 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device):
     progress_bar = tqdm(dataloader, desc="ViT Training")
     for images, labels in progress_bar:
         images = images.to(device)
-        labels = labels.to(device) # Keep flat as integers [batch] for CrossEntropyLoss
+        labels = labels.to(device).long() # Keep flat as integers [batch] for CrossEntropyLoss
         
         # Forward pass
         optimizer.zero_grad()
@@ -51,7 +51,7 @@ def validate(model, dataloader, criterion, device):
     with torch.no_grad():
         for images, labels in tqdm(dataloader, desc="ViT Validation"):
             images = images.to(device)
-            labels = labels.to(device)
+            labels = labels.to(device).long()
             
             outputs = model(images)
             loss = criterion(outputs, labels)
@@ -94,8 +94,8 @@ def main():
     # 3. Load Datasets
     print("Loading Datasets...")
     # Adjust paths if your dataset location differs locally
-    train_dataset = Data(root_dir='../data/external/train', transform=train_transforms)
-    val_dataset = Data(root_dir='../data/external/valid', transform=val_transforms)
+    train_dataset = Data(root_dir='/content/cnn_deepfake_recognition/data/external/rvf10k/train', transform=train_transforms)
+    val_dataset = Data(root_dir='/content/cnn_deepfake_recognition/data/external/rvf10k/valid', transform=val_transforms)
     
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4, pin_memory=True)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4, pin_memory=True)

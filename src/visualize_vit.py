@@ -89,8 +89,17 @@ class ViTAttentionVisualizer:
         
         # Extract attention mapping for the [CLS] token (14x14 patch layout)
         mask = result[0, 1:].reshape(14, 14)
+        x, y = torch.meshgrid(torch.linspace(-1, 1, 14), torch.linspace(-1, 1, 14), indexing='ij')
+        dst = torch.sqrt(x**2 + y**2).to(DEVICE)
+        sigma = 0.75
+        gauss = torch.exp(-(dst**2 / (2.0 * sigma**2))).cpu().numpy()
+        
+        # Apply the mask to dampen the outer border cells smoothly
+        mask = mask.cpu().numpy() * gauss
+        
+        # Re-normalize the heat distribution map
         mask = mask / (mask.max() + 1e-7)
-        return mask.cpu().numpy()
+        return mask
 
 def visualize_vit_attention(img_path):
     model = DeepfakeViTWrapper(pretrained=False)
@@ -143,5 +152,5 @@ def visualize_vit_attention(img_path):
 
 if __name__ == "__main__":
     # Point this to your test image path
-    target_image = r"C:\Users\tnkis\projects_adya\ViTvsCNN\data\external\train\fake\ZXGH5PIXZS.jpg"
+    target_image = r"C:\Users\tnkis\projects_adya\ViTvsCNN\data\external\valid\fake\0AIFZB4IE6.jpg"
     visualize_vit_attention(target_image)
