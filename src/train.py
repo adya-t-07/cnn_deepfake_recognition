@@ -5,6 +5,9 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from tqdm import tqdm
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
 # Import our custom components
 from src.dataset import Data
@@ -50,6 +53,10 @@ def validate(model, dataloader, criterion, device):
     correct_preds = 0
     total_samples = 0
     
+    # 💡 Accumulators for the confusion matrix
+    all_preds = []
+    all_labels = []
+
     with torch.no_grad(): # Disable gradient calculations for pure validation speed
         for images, labels in tqdm(dataloader, desc="Validation"):
             images = images.to(device)
@@ -62,8 +69,41 @@ def validate(model, dataloader, criterion, device):
             predictions = (outputs > 0.0).float()
             correct_preds += (predictions == labels).sum().item()
             total_samples += images.size(0)
-            
-    return running_loss / total_samples, correct_preds / total_samples
+
+            # 💡 Save predictions and ground truth labels to CPU arrays
+            all_preds.extend(predictions.cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
+        
+    # Compute the final epoch metrics
+    epoch_loss = running_loss / total_samples
+    epoch_acc = correct_preds / total_samples
+    cm = confusion_matrix(all_labels, all_preds)
+    return epoch_loss, epoch_acc, cm
+
+def save_confusion_matrix(cm, epoch, model_name="vit"):
+    """
+    Generates and saves a visual confusion matrix plot.
+    """
+    plt.figure(figsize=(6, 5))
+    
+    # Define labels matching your dataset folder structure layout (alphabetical order usually)
+    # e.g., if folders are 'fake' and 'real', 'fake' is 0, 'real' is 1
+    class_names = ['Fake', 'Real'] 
+    
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
+    
+    # Plot with a nice professional blue color scheme
+    disp.plot(cmap=plt.cm.Blues, values_format='d')
+    
+    plt.title(f"{model_name.upper()} Confusion Matrix - Epoch {epoch}")
+    
+    # Create an output directory for metrics if it doesn't exist
+    os.makedirs('metrics', exist_ok=True)
+    
+    # Save the file out cleanly
+    plt.savefig(f'metrics/{model_name}_cm_epoch_{epoch}.png', bbox_inches='tight', dpi=150)
+    plt.close()
+    print(f"📊 Confusion Matrix plot successfully saved to: metrics/{model_name}_cm_epoch_{epoch}.png")
 
 def main():
     # 1. Hyperparameters & Configuration
@@ -97,8 +137,8 @@ def main():
 
     # 3. Instantiate Custom Datasets and PyTorch DataLoaders
     print("Loading Datasets...")
-    train_dataset = Data(root_dir='../data/external/train', transform=train_transforms)
-    val_dataset = Data(root_dir='../data/external/valid', transform=val_transforms)
+    train_dataset = Data(root_dir='/content/cnn_deepfake_recognition/data/external/rvf10k/train', transform=train_transforms)
+    val_dataset = Data(root_dir='/content/cnn_deepfake_recognition/data/external/rvf10k/valid', transform=val_transforms)
     
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4, pin_memory=True)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4, pin_memory=True)
@@ -118,10 +158,11 @@ def main():
     for epoch in range(EPOCHS):
         print(f"--- Epoch {epoch+1}/{EPOCHS} ---")
         train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, DEVICE)
-        val_loss, val_acc = validate(model, val_loader, criterion, DEVICE)
+        val_loss, val_acc, epoch_cm = validate(model, val_loader, criterion, DEVICE)
         
         print(f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc*100:.2f}%")
         print(f"Val Loss:   {val_loss:.4f} | Val Acc:   {val_acc*100:.2f}%\n")
+        save_confusion_matrix(epoch_cm, epoch=epoch+1, model_name="vit_baseline")
         
         # Save the best weights snapshot if validation accuracy improves
         if val_acc > best_val_acc:

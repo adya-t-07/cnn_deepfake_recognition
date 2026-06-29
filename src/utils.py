@@ -57,7 +57,7 @@ class ForensicGradCAM:
 # 3. Execution Wrapper
 def run_forensic_analysis(img_path, title_prefix="Image"):
     model = CNN(pretrained=False)
-    weights_path = os.path.join('weights', 'cnn_baseline.pth')
+    weights_path = os.path.join('weights', 'cnn_baseline1.pth')
     model.load_state_dict(torch.load(weights_path, map_location=DEVICE))
     model = model.to(DEVICE).eval()
     
