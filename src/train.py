@@ -80,7 +80,7 @@ def validate(model, dataloader, criterion, device):
     cm = confusion_matrix(all_labels, all_preds)
     return epoch_loss, epoch_acc, cm
 
-def save_confusion_matrix(cm, epoch, model_name="vit"):
+def save_confusion_matrix(cm, epoch, model_name="cnn"):
     """
     Generates and saves a visual confusion matrix plot.
     """
@@ -162,7 +162,7 @@ def main():
         
         print(f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc*100:.2f}%")
         print(f"Val Loss:   {val_loss:.4f} | Val Acc:   {val_acc*100:.2f}%\n")
-        save_confusion_matrix(epoch_cm, epoch=epoch+1, model_name="vit_baseline")
+        save_confusion_matrix(epoch_cm, epoch=epoch+1, model_name="cnn_baseline")
         
         # Save the best weights snapshot if validation accuracy improves
         if val_acc > best_val_acc:
