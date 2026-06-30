@@ -24,10 +24,10 @@ The reason behind this was found to be that deepfake generators like StyleGAN le
 
 ## XAI Findings
 Sample 1
-![alt text](cnn2.png)
-![alt text](vit2.png)
+![alt text](xai_findings/cnn2.png)
+![alt text](xai_findings/vit2.png)
 Sample 2
-![alt text](cnn1.png)
-![alt text](vit1.png)
+![alt text](xai_findings/cnn1.png)
+![alt text](xai_findings/vit1.png)
 
 
