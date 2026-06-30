@@ -104,12 +104,12 @@ def run_forensic_analysis(img_path, title_prefix="Image"):
     plt.figure(figsize=(10, 4))
     plt.subplot(1, 2, 1)
     plt.imshow(cv2.cvtColor(display_img, cv2.COLOR_BGR2RGB))
-    plt.title(f"{title_prefix} (Cropped Input)")
+    plt.title(f"{title_prefix}")
     plt.axis('off')
     
     plt.subplot(1, 2, 2)
     plt.imshow(cv2.cvtColor(overlay, cv2.COLOR_BGR2RGB))
-    plt.title(f"{title_prefix} CNN Attention Hotspot")
+    plt.title(f"{title_prefix} CNN GradCAM")
     plt.axis('off')
     plt.show()
 
@@ -117,7 +117,7 @@ def run_forensic_analysis(img_path, title_prefix="Image"):
 if __name__ == "__main__":
     # 🎯 PASTE YOUR COPIED PATH INSIDE THE QUOTES BELOW:
     # The 'r' before the string handles Windows backslashes perfectly!
-    manual_image_path = r"C:\Users\tnkis\projects_adya\ViTvsCNN\data\external\valid\fake\0AIFZB4IE6.jpg"
+    manual_image_path = r"C:\Users\tnkis\projects_adya\ViTvsCNN\data\external\train\fake\0DX2W9VBR5.jpg"
     
     print(f"🧠 Local execution starting: Analyzing target image...")
     if os.path.exists(manual_image_path):

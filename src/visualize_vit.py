@@ -141,7 +141,7 @@ def visualize_vit_attention(img_path):
     plt.figure(figsize=(10, 4))
     plt.subplot(1, 2, 1)
     plt.imshow(cv2.cvtColor(display_img, cv2.COLOR_BGR2RGB))
-    plt.title("Cropped Input")
+    plt.title("Input")
     plt.axis('off')
     
     plt.subplot(1, 2, 2)
@@ -152,5 +152,5 @@ def visualize_vit_attention(img_path):
 
 if __name__ == "__main__":
     # Point this to your test image path
-    target_image = r"C:\Users\tnkis\projects_adya\ViTvsCNN\data\external\valid\fake\0AIFZB4IE6.jpg"
+    target_image = r"C:\Users\tnkis\projects_adya\ViTvsCNN\data\external\train\fake\0DX2W9VBR5.jpg"
     visualize_vit_attention(target_image)
